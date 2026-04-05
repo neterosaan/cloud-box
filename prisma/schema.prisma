@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique // We will use this when we add Clerk Auth
+  email     String   @unique
+  folders   Folder[]
+  files     File[]
+  createdAt DateTime @default(now())
+}
+
+model Folder {
+  id             String   @id @default(uuid())
+  name           String
+  parentId       String?  // If null, it's a root folder
+  parent         Folder?  @relation("SubFolders", fields: [parentId], references: [id])
+  subFolders     Folder[] @relation("SubFolders")
+  
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  
+  files          File[]
+  createdAt      DateTime @default(now())
+}
+
+model File {
+  id        String   @id @default(uuid())
+  name      String
+  url       String   // The link to AWS S3
+  size      Int      // File size in bytes
+  type      String   // mime-type (e.g. image/png)
+  
+  folderId  String?
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  tags      Tag[]    @relation("FileTags")
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  files File[] @relation("FileTags")
+}
