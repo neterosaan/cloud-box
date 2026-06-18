@@ -5,12 +5,13 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   id        String   @id @default(uuid())
-  clerkId   String   @unique // We will use this when we add Clerk Auth
-  email     String   @unique
+  supabaseId   String   @unique // We will use this when we add Clerk Auth
+  email     String?   @unique
   folders   Folder[]
   files     File[]
   createdAt DateTime @default(now())
@@ -20,7 +21,7 @@ model Folder {
   id             String   @id @default(uuid())
   name           String
   parentId       String?  // If null, it's a root folder
-  parent         Folder?  @relation("SubFolders", fields: [parentId], references: [id])
+  parent         Folder?  @relation("SubFolders", fields: [parentId], references: [id], onDelete:Cascade)
   subFolders     Folder[] @relation("SubFolders")
   
   userId         String
@@ -28,6 +29,8 @@ model Folder {
   
   files          File[]
   createdAt      DateTime @default(now())
+
+  @@unique ([name,parentId,userId])
 }
 
 model File {
@@ -38,13 +41,15 @@ model File {
   type      String   // mime-type (e.g. image/png)
   
   folderId  String?
-  folder    Folder?  @relation(fields: [folderId], references: [id])
+  folder    Folder?  @relation(fields: [folderId], references: [id],onDelete:Cascade)
   
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 
   tags      Tag[]    @relation("FileTags")
   createdAt DateTime @default(now())
+
+  @@unique([name,folderId,userId])
 }
 
 model Tag {
