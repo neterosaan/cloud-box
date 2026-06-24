@@ -10,11 +10,10 @@ const client = jwksClient({
       rateLimit: true,
 });
 function getKey(header, callback) {
-  console.log("KID:", header.kid);
 
   client.getSigningKey(header.kid, (err, key) => {
     if (err) {
-      console.log("JWKS ERROR:", err.message);
+      console.error("JWKS ERROR:", err.message);
       return callback(err);
     }
 
@@ -35,7 +34,7 @@ export const requireAuth = (req, res, next) => {
 
   const token = authHeader.split(" ")[1];
 
-  jwt.verify(token, getKey, {}, async (err, decodedToken) => {
+  jwt.verify(token, getKey, {algorithms: ["RS256"]}, async (err, decodedToken) => {
     if (err) {
       return res.status(401).json({
         success: false,
@@ -45,7 +44,6 @@ export const requireAuth = (req, res, next) => {
 
     try {
       const supabaseUserId = decodedToken.sub;
-      console.log(supabaseUserId)
 
       const user = await prisma.user.upsert({
         where: { supabaseId: supabaseUserId },
@@ -59,6 +57,7 @@ export const requireAuth = (req, res, next) => {
       req.user = user;
       next();
     } catch (dbError) {
+      console.error("DB error:", dbError);
       return res.status(500).json({
         success: false,
         message: "Database error",

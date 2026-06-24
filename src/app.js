@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 
-import folderRoutes from './features/folders/foldersRoutes'
+import folderRoutes from './features/folders/foldersRoutes.js'
 
 const app = express();
 
