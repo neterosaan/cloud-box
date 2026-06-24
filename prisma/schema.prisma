@@ -14,6 +14,7 @@ model User {
   email     String?   @unique
   folders   Folder[]
   files     File[]
+  tags Tag[]
   createdAt DateTime @default(now())
 }
 
@@ -53,7 +54,11 @@ model File {
 }
 
 model Tag {
-  id    String @id @default(uuid())
-  name  String @unique
-  files File[] @relation("FileTags")
+  id     String @id @default(uuid())
+  name   String
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  files  File[] @relation("FileTags")
+
+  @@unique([name, userId])  // unique per user, not globally
 }

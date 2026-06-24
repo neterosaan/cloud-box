@@ -4,7 +4,10 @@ import prisma from "../config/prisma.js";
 
 const client = jwksClient({
   jwksUri: `${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`,
-  
+      cache: true,
+      cacheMaxEntries: 5,
+      cacheMaxAge: 600000,
+      rateLimit: true,
 });
 function getKey(header, callback) {
   console.log("KID:", header.kid);
