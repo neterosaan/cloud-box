@@ -34,7 +34,8 @@ export const requireAuth = (req, res, next) => {
 
   const token = authHeader.split(" ")[1];
 
-  jwt.verify(token, getKey, {algorithms: ["RS256"]}, async (err, decodedToken) => {
+
+  jwt.verify(token, getKey, {algorithms: ["ES256"]}, async (err, decodedToken) => {
     if (err) {
       return res.status(401).json({
         success: false,
