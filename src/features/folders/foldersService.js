@@ -98,12 +98,31 @@ export const updateFolder = async(userId,folderId,updateData)=>{
      }
 
     if (updateData.parentId) {
-    const newParent = await prisma.folder.findUnique({ where: { id: updateData.parentId } });
-    if (!newParent || newParent.userId !== userId) {
+        const newParent = await prisma.folder.findUnique({ where: { id: updateData.parentId } });
+        if (!newParent || newParent.userId !== userId) {
         const err = new Error("Target parent folder not found or unauthorized.");
         err.status = 404;
         throw err;  
-    }
+        }
+        const descendants = await prisma.$queryRaw`
+        WITH RECURSIVE descendants AS (
+            SELECT id FROM "Folder"
+            where id=${folderId}
+            UNION ALL
+            SELECT f.id FROM "Folder" f
+            INNER JOIN descendants d ON f."parentId" =d.id
+        )
+            SELECT id FROM descendants
+        `;
+
+          const descendantIds = descendants.map(d => d.id);
+
+        if (descendantIds.includes(updateData.parentId)) {
+            const err = new Error("Cannot move a folder into its own descendant.");
+            err.status = 400;
+            throw err;
+        }
+
     }
 
     const updatedFolder = await prisma.folder.update({
