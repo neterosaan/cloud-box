@@ -1,15 +1,15 @@
 import prisma from "../../config/prisma.js";
 
 export const createFolder = async(userId,name,parentId=null)=>{
-    console.log(userId)
     if(parentId){
 
         const parentFolder= await prisma.folder.findUnique({
             where: {id : parentId}
         })
-
-        if(!parentFolder || parentFolder.userId !== userId){
-            throw new Error("parent folder not founr or unauthorized.")
+        if (!parentFolder || parentFolder.userId !== userId) {
+        const err = new Error("Parent folder not found or unauthorized.");
+        err.status = 404;
+        throw err;
         }
     }
 
@@ -21,9 +21,10 @@ export const createFolder = async(userId,name,parentId=null)=>{
             },
     });
 
-    if(existingFolder){
-        throw new Error("A folder with this name already exists in this location.")
-    }
+        if (existingFolder) {
+        const err = new Error("A folder with this name already exists in this location.");
+        err.status = 409; 
+        }
 
     const newFolder = await prisma.folder.create({
         data: {
@@ -121,3 +122,31 @@ export const deleteFolder = async (userId, folderId) => {
 
     return { message: "Folder and all its contents deleted successfully." };
 };
+
+
+export const getFolderBreadcrumbs = async (userId, folderId) => {
+  // use prisma.$queryRaw with the recursive CTE above
+  const breadcrumbs = await prisma.$queryRaw`
+    WITH RECURSIVE breadcrumbs AS(
+     SELECT id,name,"parentId",1 AS depth
+     from "Folder"
+     where "userId" =${userId} AND id=${folderId}
+
+     UNION ALL
+
+     SELECT f.id,f.name,f."parentId",b.depth + 1
+     from "Folder" f
+     INNER JOIN breadcrumbs b ON f.id=b."parentId"
+    )
+     SELECT id,name,"parentId"
+     from breadcrumbs
+     ORDER BY depth DESC
+  `;
+   // validate the result belongs to the user
+  if(breadcrumbs.length === 0){
+    throw new Error ("Folder not found or unauthorized.")
+  }
+  // return the breadcrumb array
+
+  return breadcrumbs
+}

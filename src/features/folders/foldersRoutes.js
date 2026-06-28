@@ -15,4 +15,7 @@ router.patch('/:id', foldersController.updateFolder);
 
 router.delete('/:id', foldersController.deleteFolder);
 
+router.get('/:id/breadcrumbs', foldersController.getFolderBreadcrumbs);
+
+
 export default router;

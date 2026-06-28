@@ -22,12 +22,12 @@ export const createFolder = async (req,res)=>{
             data: newFolder
         });
 
-    }catch(error){
-         return res.status(400).json({
+    }catch (error) {
+        return res.status(error.status || 500).json({
             success: false,
             message: error.message
         });
-    }
+}
 }
 
 export const getFolder = async(req,res)=>{
@@ -75,7 +75,6 @@ export const updateFolder = async (req, res) => {
         const userId = req.user.id;
         const folderId = req.params.id;
 
-        // 1. Validate Params & Body
         const paramValidation = getFolderParamsSchema.safeParse(req.params);
         const bodyValidation = updateFolderSchema.safeParse(req.body);
 
@@ -88,8 +87,6 @@ export const updateFolder = async (req, res) => {
                 }
             });
         }
-
-        // 2. Call Service
         const updatedFolder = await foldersService.updateFolder(userId, folderId, bodyValidation.data);
 
         return res.status(200).json({
@@ -98,7 +95,7 @@ export const updateFolder = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(400).json({
+        return res.status(404).json({
             success: false,
             message: error.message
         });
@@ -109,9 +106,10 @@ export const updateFolder = async (req, res) => {
 export const deleteFolder = async (req, res) => {
     try {
         const userId = req.user.id;
+
+        
         const folderId = req.params.id;
 
-        // 1. Validate Params
         const paramValidation = getFolderParamsSchema.safeParse(req.params);
         if (!paramValidation.success) {
             return res.status(400).json({
@@ -120,7 +118,6 @@ export const deleteFolder = async (req, res) => {
             });
         }
 
-        // 2. Call Service
         const result = await foldersService.deleteFolder(userId, folderId);
 
         return res.status(200).json({
@@ -135,3 +132,30 @@ export const deleteFolder = async (req, res) => {
         });
     }
 };
+
+export const getFolderBreadcrumbs = async (req, res) => {
+    
+    try{
+        const userId = req.user.id
+        const folderId = req.params.id
+        const validationResult=getFolderParamsSchema.safeParse(req.params);
+        if(!validationResult.success){
+                return res.status(400).json({
+                success: false,
+                errors: validationResult.error.format()
+            });
+        }
+
+        const breadcrumbs = await foldersService.getFolderBreadcrumbs(userId,folderId)
+            return res.status(200).json({
+            success: true,
+            data: breadcrumbs
+        });
+
+    }catch (error) {
+        return res.status(404).json({
+            success: false,
+            message: error.message
+        });
+    }
+}
