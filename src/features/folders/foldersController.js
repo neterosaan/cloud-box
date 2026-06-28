@@ -27,7 +27,7 @@ export const createFolder = async (req,res)=>{
             success: false,
             message: error.message
         });
-}
+    }
 }
 
 export const getFolder = async(req,res)=>{
@@ -61,8 +61,8 @@ export const getFolder = async(req,res)=>{
             data: folderData
         });
 
-    }catch(error){
-            return res.status(404).json({
+    }catch (error) {
+        return res.status(error.status || 500).json({
             success: false,
             message: error.message
         });
@@ -95,7 +95,7 @@ export const updateFolder = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(404).json({
+        return res.status(error.status || 500).json({
             success: false,
             message: error.message
         });
@@ -107,7 +107,7 @@ export const deleteFolder = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        
+
         const folderId = req.params.id;
 
         const paramValidation = getFolderParamsSchema.safeParse(req.params);
@@ -126,7 +126,7 @@ export const deleteFolder = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(404).json({
+        return res.status(error.status || 500).json({
             success: false,
             message: error.message
         });
@@ -153,7 +153,7 @@ export const getFolderBreadcrumbs = async (req, res) => {
         });
 
     }catch (error) {
-        return res.status(404).json({
+        return res.status(error.status || 500).json({
             success: false,
             message: error.message
         });

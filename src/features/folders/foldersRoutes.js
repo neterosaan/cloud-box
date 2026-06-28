@@ -9,13 +9,15 @@ router.post('/',foldersController.createFolder);
 
 router.get('/',foldersController.getFolder)
 
+router.get('/:id/breadcrumbs', foldersController.getFolderBreadcrumbs);
+
 router.get('/:id', foldersController.getFolder)
 
 router.patch('/:id', foldersController.updateFolder);
 
 router.delete('/:id', foldersController.deleteFolder);
 
-router.get('/:id/breadcrumbs', foldersController.getFolderBreadcrumbs);
+
 
 
 export default router;

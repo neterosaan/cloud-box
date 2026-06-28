@@ -24,6 +24,7 @@ export const createFolder = async(userId,name,parentId=null)=>{
         if (existingFolder) {
         const err = new Error("A folder with this name already exists in this location.");
         err.status = 409; 
+        throw err
         }
 
     const newFolder = await prisma.folder.create({
@@ -65,10 +66,11 @@ export const getFolderById = async(userId,folderId)=>{
         }
      })
 
-     if (!folder || folder.userId !== userId){
-
-        throw new Error("Folder not found or unauthorized.");
-     }
+        if (!folder || folder.userId !== userId) {
+            const err = new Error("Folder not found or unauthorized.");
+            err.status = 404;
+            throw err;
+         }
 
          return {
         id: folder.id,
@@ -84,17 +86,23 @@ export const updateFolder = async(userId,folderId,updateData)=>{
 
     const folder = await prisma.folder.findUnique({ where: { id: folderId } });
     if (!folder || folder.userId !== userId) {
-        throw new Error("Folder not found or unauthorized.");
-    }
+        const err = new Error("Folder not found or unauthorized.");
+        err.status = 404;
+        throw err; 
+       }
 
     if (updateData.parentId === folderId) {
-        throw new Error("A folder cannot be its own parent.");
-    }
+        const err = new Error("A folder cannot be its own parent.");
+        err.status = 400;
+        throw err;  
+     }
 
     if (updateData.parentId) {
     const newParent = await prisma.folder.findUnique({ where: { id: updateData.parentId } });
     if (!newParent || newParent.userId !== userId) {
-        throw new Error("Target parent folder not found or unauthorized.");
+        const err = new Error("Target parent folder not found or unauthorized.");
+        err.status = 404;
+        throw err;  
     }
     }
 
@@ -113,7 +121,9 @@ export const deleteFolder = async (userId, folderId) => {
 
     const folder = await prisma.folder.findUnique({ where: { id: folderId } });
     if (!folder || folder.userId !== userId) {
-        throw new Error("Folder not found or unauthorized.");
+    const err = new Error("Folder not found or unauthorized.");
+    err.status = 404;
+    throw err;  
     }
 
     await prisma.folder.delete({
@@ -136,7 +146,7 @@ export const getFolderBreadcrumbs = async (userId, folderId) => {
 
      SELECT f.id,f.name,f."parentId",b.depth + 1
      from "Folder" f
-     INNER JOIN breadcrumbs b ON f.id=b."parentId"
+     INNER JOIN breadcrumbs b ON f.id=b."parentId" AND f."userId" = ${userId}
     )
      SELECT id,name,"parentId"
      from breadcrumbs
@@ -144,7 +154,9 @@ export const getFolderBreadcrumbs = async (userId, folderId) => {
   `;
    // validate the result belongs to the user
   if(breadcrumbs.length === 0){
-    throw new Error ("Folder not found or unauthorized.")
+    const err = new Error("Folder not found or unauthorized.");
+    err.status = 404;
+    throw err;
   }
   // return the breadcrumb array
 
