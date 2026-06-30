@@ -25,14 +25,6 @@ export const updateFolderSchema = z.object({
     message: "You must provide either a new name or a new parentId to update."
 })
 
-export const renameFolderSchema= z.object({
-    
-    name : z.string()
-        .min(1,"folder name cannot be empty")
-        .max(255, "folder name is too long")
-        .regex(/^[^<>:"/\\|?*]+$/, "Folder name contains invalid characters"),
-    })
-
 
 export const getFolderParamsSchema = z.object({
     id: z.string().uuid("Invalid folder ID format"),

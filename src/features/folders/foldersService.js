@@ -171,13 +171,11 @@ export const getFolderBreadcrumbs = async (userId, folderId) => {
      from breadcrumbs
      ORDER BY depth DESC
   `;
-   // validate the result belongs to the user
   if(breadcrumbs.length === 0){
     const err = new Error("Folder not found or unauthorized.");
     err.status = 404;
     throw err;
   }
-  // return the breadcrumb array
 
   return breadcrumbs
 }
