@@ -8,6 +8,49 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum UploadStatus {
+  PENDING     // session created, client hasn't started streaming yet
+  UPLOADING   // bytes are actively being streamed to S3
+  COMPLETED   // S3 upload finished + File row created
+  FAILED      // something went wrong, S3 multipart aborted (if applicable)
+  ABORTED     // explicitly cancelled by client or expired by a cleanup job
+}
+
+model UploadSession {
+  id             String       @id @default(uuid())
+  status         UploadStatus @default(PENDING)
+
+  // What the client told us up front (declared intent)
+  fileName       String
+  declaredSize   Int?         // optional client-provided size hint, NOT trusted for billing/limits
+  mimeType       String?      // optional client-provided hint, validated against real bytes during streaming
+
+  folderId       String?
+  folder         Folder?      @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+
+  // S3 bookkeeping — needed to abort/resume/cleanup multipart uploads
+  s3Key          String       // where the object will live; generated at init time
+  s3UploadId     String?      // set once we open a multipart upload on S3 (not at init — see note below)
+
+  // Actual observed values once upload completes — used to populate File
+  actualSize     Int?
+  actualMimeType String?
+
+  errorMessage   String?      // populated on FAILED, useful for debugging/support
+
+  expiresAt      DateTime     // PENDING sessions older than this are reaped by a cleanup job
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  file           File?        // 1:1 back-reference once completed
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
 model User {
   id        String   @id @default(uuid())
   supabaseId   String   @unique // We will use this when we add Clerk Auth
@@ -15,6 +58,7 @@ model User {
   folders   Folder[]
   files     File[]
   tags Tag[]
+  uploadSessions UploadSession[]
   createdAt DateTime @default(now())
 }
 
@@ -24,7 +68,7 @@ model Folder {
   parentId       String?  // If null, it's a root folder
   parent         Folder?  @relation("SubFolders", fields: [parentId], references: [id], onDelete:Cascade)
   subFolders     Folder[] @relation("SubFolders")
-  
+  uploadSessions UploadSession[]
   userId         String
   user           User     @relation(fields: [userId], references: [id])
   
@@ -35,22 +79,26 @@ model Folder {
 }
 
 model File {
-  id        String   @id @default(uuid())
-  name      String
-  url       String   // The link to AWS S3
-  size      Int      // File size in bytes
-  type      String   // mime-type (e.g. image/png)
-  
-  folderId  String?
-  folder    Folder?  @relation(fields: [folderId], references: [id],onDelete:Cascade)
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  id              String   @id @default(uuid())
+  name            String
+  url             String
+  size            Int
+  type            String
 
-  tags      Tag[]    @relation("FileTags")
-  createdAt DateTime @default(now())
+  folderId        String?
+  folder          Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
 
-  @@unique([name,folderId,userId])
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+
+  tags            Tag[]    @relation("FileTags")
+
+  uploadSessionId String?       @unique
+  uploadSession   UploadSession? @relation(fields: [uploadSessionId], references: [id])
+
+  createdAt       DateTime @default(now())
+
+  @@unique([name, folderId, userId])
 }
 
 model Tag {
