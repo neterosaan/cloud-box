@@ -11,7 +11,7 @@ export const fileParamsSchema= z.object({
     id: z.string().uuid("Invalid file ID format"),
 })
 
-export const updateFolderSchema = z.object({
+export const updateFileSchema = z.object({
     
     name : z.string()
         .min(1,"File name cannot be empty")
