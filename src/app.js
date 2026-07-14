@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-
 import folderRoutes from './features/folders/foldersRoutes.js'
 import uploadRoutes from './features/uploads/uploadsRoutes.js';  
 

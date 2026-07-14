@@ -58,7 +58,20 @@ export const initUploadSession = async (userId, fileName, folderId = null) => {
 
 export const handleUploadStream = async (userId, uploadId, req) => {
 
-  // 1. Load session and verify ownership (404, not 403 — don't leak existence)
+
+const { count } = await prisma.uploadSession.updateMany({
+  where: {
+    id: uploadId,
+    userId: userId,      
+    status: 'PENDING',
+    expiresAt: { gt: new Date() }, 
+  },
+  data: {
+    status: 'UPLOADING',
+  },
+});
+
+if (count === 0) {
   const session = await prisma.uploadSession.findUnique({
     where: { id: uploadId },
   });
@@ -69,30 +82,16 @@ export const handleUploadStream = async (userId, uploadId, req) => {
     throw err;
   }
 
-  // 2. Verify the session hasn't expired
   if (new Date() > session.expiresAt) {
     const err = new Error('Upload session has expired. Please start a new upload.');
     err.status = 410;
     throw err;
   }
 
-    const { count } = await prisma.uploadSession.updateMany({
-    where: {
-      id: uploadId,
-      status: 'PENDING',   // ← the atomic guard: only succeeds if still PENDING
-    },
-    data: {
-      status: 'UPLOADING',
-    },
-  });
-
-  if (count === 0) {
-    const err = new Error(
-      'Upload session is no longer available. It may have already been used, failed, or aborted.'
-    );
-    err.status = 409;
-    throw err;
-  }
+  const err = new Error('Upload session is no longer available.');
+  err.status = 409;
+  throw err;
+}
 
     let pipelineResult;
   try {
@@ -108,7 +107,7 @@ export const handleUploadStream = async (userId, uploadId, req) => {
         errorMessage: pipelineError.message,
       },
     });
-    throw normalized; // re-throw so the controller returns the right HTTP status
+    throw normalized; 
   }
 
   const { actualSize, actualMimeType } = pipelineResult;

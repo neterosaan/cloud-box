@@ -5,6 +5,7 @@ import { uploadFile } from "./filesService.js"
 const router = express.Router();
 
 router.use(requireAuth);
-router.post("/upload", uploadFile);
+router.post("/uploads/init", uploadFile);
+router.post("/uploads/:uploadId", uploadFile);
 
 export default router;
