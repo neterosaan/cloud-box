@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import folderRoutes from './features/folders/foldersRoutes.js'
+import fileRoutes from './features/files/filesRoutes.js';
 import uploadRoutes from './features/uploads/uploadsRoutes.js';  
 
 const app = express();
@@ -9,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/folders',folderRoutes)
+app.use('/api/files',fileRoutes)
 app.use('/api/uploads', uploadRoutes); 
 
 app.use((err, req, res, next) => {

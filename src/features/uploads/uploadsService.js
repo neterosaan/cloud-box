@@ -93,6 +93,10 @@ if (count === 0) {
   throw err;
 }
 
+  const session = await prisma.uploadSession.findUnique({
+    where: { id: uploadId },
+  });
+
     let pipelineResult;
   try {
     pipelineResult = await runUploadPipeline(session, req);

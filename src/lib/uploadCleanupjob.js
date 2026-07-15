@@ -18,10 +18,10 @@ const abortOrphanedS3MultipartUploads = async (s3KeyPrefix) => {
 
         const { Uploads = [] } = await s3.send(listCommand)
 
-        for( const upload of uploads){
+        for( const upload of Uploads){
             const abortCommand = new AbortMultipartUploadCommand({
                 Bucket : BUCKET_NAME,
-                Key : upload.key,
+                Key : upload.Key,
                 UploadId: upload.UploadId
             });
       await s3.send(abortCommand).catch((err) => {
@@ -53,6 +53,10 @@ const cleanupExpiredPendingSessions = async () => {
             errorMessage: 'Session expired before upload was started.',
         },
     })
+    
+    if (count > 0) {
+    console.log(`[CleanupJob] Marked ${count} expired PENDING session(s) as ABORTED.`);
+  }
 }
 
 

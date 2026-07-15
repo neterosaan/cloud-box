@@ -25,10 +25,12 @@ export const createS3Upload = (s3Key, bodyStream) => {
 
 
 
-export const generatePresignedDownloadUrl = async (s3Key) => {
+export const generatePresignedDownloadUrl = async (s3Key,mimeType) => {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: s3Key,
+    ResponseContentType: mimeType,            
+    ResponseContentDisposition: 'inline',
   });
 
   return await getSignedUrl(s3, command, { expiresIn: PRESIGNED_URL_TTL });
