@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../../middlewares/authMiddleware.js';
 import * as foldersController from '../folders/foldersController.js'
+
 const router = express.Router();
 
 router.use(requireAuth)

@@ -85,3 +85,92 @@ export const deleteFile = async (userId, fileId) => {
 
     return { message: 'File deleted successfully.' };
 };
+
+
+
+export const attachTag = async (userId, fileId, tagId) => {
+
+
+    const file = await prisma.file.findUnique({
+    where: { id: fileId },
+  });
+
+  if (!file || file.userId !== userId) {
+    const err = new Error('File not found or unauthorized.');
+    err.status = 404;
+    throw err;
+  }
+
+
+  const tag = await prisma.tag.findUnique({
+    where: { id: tagId },
+  });
+
+  if (!tag || tag.userId !== userId) {
+    const err = new Error('Tag not found or unauthorized.');
+    err.status = 404;
+    throw err;
+  }
+  const alreadyAttached = await prisma.file.findFirst({
+    where:{
+        id: fileId,
+        tags: { some : { id: tagId } },
+    },
+  });
+
+  if (alreadyAttached) {
+    const err = new Error('Tag is already attached to this file.');
+    err.status = 409;
+    throw err;
+  }
+
+  const updatedFile = await prisma.file.update({
+    where: { id: fileId },
+    data:{
+        tags:{
+            connect: { id:tagId },
+        },
+    },
+    include: {
+        tags:true,
+    },
+  });
+  
+  return updatedFile
+};
+
+export const detachTag = async (userId, fileId, tagId) => {
+
+  const file = await prisma.file.findUnique({
+    where: { id: fileId },
+    include: {
+      tags: { where: { id: tagId } },
+    },
+  });
+
+  if (!file || file.userId !== userId) {
+    const err = new Error('File not found or unauthorized.');
+    err.status = 404;
+    throw err;
+  }
+
+  if (file.tags.length === 0) {
+    const err = new Error('Tag is not attached to this file.');
+    err.status = 404;
+    throw err;
+  }
+
+  const updatedFile = await prisma.file.update({
+    where: { id: fileId },
+    data: {
+      tags: {
+        disconnect: { id: tagId },
+      },
+    },
+    include: {
+      tags: true,
+    },
+  });
+
+  return updatedFile;
+};
