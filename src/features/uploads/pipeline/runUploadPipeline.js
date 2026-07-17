@@ -5,13 +5,13 @@ import { SizeGuardTransform } from '../streams/sizeGuardTransform.js';
 import { MimeTypeSnifferTransform } from '../streams/mimeTypeSnifferTransform.js';
 import { MimeTypeValidatorTransform } from '../streams/mimeTypeValidatorTransform.js';
 import { createS3Upload } from '../s3/s3UploadService.js';
-import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '../uploadsConfig.js';
+import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES, STORAGE_QUOTA_BYTES} from '../uploadsConfig.js';
 
-export const runUploadPipeline = async (session, req) => {
+export const runUploadPipeline = async (session, req,currentUsage) => {
 
   const { fileStream } = await extractFilePart(req);
 
-  const sizeGuard     = new SizeGuardTransform({ maxBytes: MAX_FILE_SIZE });
+  const sizeGuard     = new SizeGuardTransform({ maxBytes: MAX_FILE_SIZE, currentUsage, storageQuota: STORAGE_QUOTA_BYTES });
   const mimeSniffer   = new MimeTypeSnifferTransform();
 
   const mimeValidator = new MimeTypeValidatorTransform({

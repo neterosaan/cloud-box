@@ -10,7 +10,7 @@ const UPLOAD_SESSION_TTL_MINUTES = 15;
 const getCurrentStorageUsage = async(userId)=>{
   
   const result = await prisma.file.aggregate({
-    where: {usereId},
+    where: { userId },
     _sum : {size : true},
   });
 
@@ -105,9 +105,11 @@ if (count === 0) {
     where: { id: uploadId },
   });
 
+    const currentUsage = await getCurrentStorageUsage(userId);
+
     let pipelineResult;
   try {
-    pipelineResult = await runUploadPipeline(session, req);
+    pipelineResult = await runUploadPipeline(session, req, currentUsage);
   } catch (pipelineError) {
 
    const normalized = normalizeError(pipelineError);
