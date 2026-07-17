@@ -1,6 +1,6 @@
-import { fileParamsSchema, updateFileSchema } from './filesValidation.js';
+import { fileParamsSchema, updateFileSchema,searchFilesSchema } from './filesValidation.js';
 import * as filesService from './filesService.js';
-import {fileTagSchema,fileTagParamsSchema} from '../tags/tagsValidation.js'
+import {fileTagSchema,fileTagParamsSchema } from '../tags/tagsValidation.js'
 
 export const downloadFile = async (req, res) => {
   const validationResult = fileParamsSchema.safeParse(req.params);
@@ -140,6 +140,33 @@ export const detachTag = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: updatedFile,
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+export const searchFiles = async (req, res) => {
+  const validationResult = searchFilesSchema.safeParse(req.query);
+  if (!validationResult.success) {
+    return res.status(400).json({
+      success: false,
+      errors: validationResult.error.format(),
+    });
+  }
+
+  try {
+    const userId = req.user.id;
+
+    const result = await filesService.searchFiles(userId, validationResult.data);
+
+    return res.status(200).json({
+      success: true,
+      data: result,
     });
   } catch (error) {
     return res.status(error.status || 500).json({

@@ -41,7 +41,7 @@ export const getFolder = async(req,res)=>{
 
         if(!folderId){
 
-            folderData = await foldersService.getRootFolders(userId)
+            folderData = await foldersService.getRootFolders(userId, req.query)
         }else{
 
         const validationResult=getFolderParamsSchema.safeParse(req.params);
@@ -52,7 +52,7 @@ export const getFolder = async(req,res)=>{
             });
         }
 
-           folderData = await foldersService.getFolderById(userId, folderId);
+           folderData = await foldersService.getFolderById(userId, folderId,  req.query);
         } 
         
         

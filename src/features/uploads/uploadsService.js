@@ -7,10 +7,21 @@ import { normalizeError } from '../../lib/normalizeError.js';
 
 const UPLOAD_SESSION_TTL_MINUTES = 15;
 
+const getCurrentStorageUsage = async(userId)=>{
+  
+  const result = await prisma.file.aggregate({
+    where: {usereId},
+    _sum : {size : true},
+  });
+
+  return result._sum.size ?? 0
+
+}
+
+
 
 export const initUploadSession = async (userId, fileName, folderId = null) => {
 
-  // 1. If a folderId was provided, verify ownership before creating anything
   if (folderId) {
     const folder = await prisma.folder.findUnique({
       where: { id: folderId },
@@ -23,8 +34,7 @@ export const initUploadSession = async (userId, fileName, folderId = null) => {
     }
   }
 
-  // 2. Pre-generate the session ID ourselves so we can build the S3 key
-  //    in the same create() call — no two-step write needed
+
   const uploadSessionId = randomUUID();
   const s3Key = generateS3Key(userId, uploadSessionId, fileName);
 
@@ -32,7 +42,6 @@ export const initUploadSession = async (userId, fileName, folderId = null) => {
     Date.now() + UPLOAD_SESSION_TTL_MINUTES * 60 * 1000
   );
 
-  // 3. Create the session row
   try{
 
       const session = await prisma.uploadSession.create({
@@ -43,7 +52,6 @@ export const initUploadSession = async (userId, fileName, folderId = null) => {
       userId,
       s3Key,
       expiresAt,
-      // status defaults to PENDING via schema
     },
   });
 

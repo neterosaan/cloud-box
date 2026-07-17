@@ -1,6 +1,7 @@
 import prisma from '../../config/prisma.js';
 import { generatePresignedDownloadUrl, deleteS3Object } from '../uploads/s3/s3UploadService.js';
 import { normalizeError } from '../../lib/normalizeError.js';
+import { parsePagination, buildPaginationMeta } from '../../lib/pagination.js';
 
 export const  downloadFile = async(userId,fileId)=>{
     const file = await prisma.file.findUnique({
@@ -173,4 +174,48 @@ export const detachTag = async (userId, fileId, tagId) => {
   });
 
   return updatedFile;
+};
+
+
+
+
+
+export const searchFiles = async (userId, filters) => {
+  const { page, limit, skip } = parsePagination(filters);
+  const where = {
+    userId,
+    ...(filters.name && {
+      name: {
+        contains: filters.name,
+        mode: 'insensitive',
+      },
+    }),
+    ...(filters.mimeType && {
+      mimeType: {
+        contains: filters.mimeType,
+        mode: 'insensitive',
+      },
+    }),
+    ...(filters.tagId && {
+      tags: {
+        some: { id: filters.tagId },
+      },
+    }),
+  };
+
+  const [files, total] = await Promise.all([
+    prisma.file.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { tags: true },
+      take: limit,
+      skip,
+    }),
+    prisma.file.count({ where }),
+  ]);
+
+  return {
+    data: files,
+    meta: buildPaginationMeta(total, page, limit),
+  };
 };

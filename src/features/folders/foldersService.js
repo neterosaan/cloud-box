@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.js";
+import { parsePagination, buildPaginationMeta } from '../../lib/pagination.js';
+
 
 export const createFolder = async(userId,name,parentId=null)=>{
     if(parentId){
@@ -38,48 +40,106 @@ export const createFolder = async(userId,name,parentId=null)=>{
     return  newFolder
 };
 
-export const getRootFolders = async(userId)=>{
+export const getRootFolders = async(userId,query)=>{
 
-    const folders = await  prisma.folder.findMany({
-        where:{ userId:userId, parentId:null},
-        orderBy: {createdAt: 'desc'}
-    });
+    const {page,limit,skip}= parsePagination(query);
 
-    const files = await prisma.file.findMany({
-        where:{ userId:userId, folderId:null},
-        orderBy: {createdAt: 'desc'}
-    });
-    
-    return {
-        name: "Root",
-        folders,
-        files
-    }
+    const [
+    folders,
+    files,
+    totalFolders,
+    totalFiles,
+    ] = await Promise.all([
+    prisma.folder.findMany({
+      where: { userId, parentId: null },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip,
+    }),
+    prisma.file.findMany({
+      where: { userId, folderId: null },
+      orderBy: { createdAt: 'desc' },
+      include: { tags: true },
+      take: limit,
+      skip,
+    }),
+    prisma.folder.count({
+      where: { userId, parentId: null },
+    }),
+    prisma.file.count({
+      where: { userId, folderId: null },
+    }),
+  ]);
+
+  return {
+    name: 'Root',
+    folders: {
+      data: folders,
+      meta: buildPaginationMeta(totalFolders, page, limit),
+    },
+    files: {
+      data: files,
+      meta: buildPaginationMeta(totalFiles, page, limit),
+    },
+  };
+
 }
 
-export const getFolderById = async(userId,folderId)=>{
-     const folder = await prisma.folder.findUnique({
-        where: {id : folderId},
-        include:{
-            subFolders: { orderBy: { createdAt: 'desc' } },
-            files: { orderBy: { createdAt: 'desc' } } 
-        }
-     })
+export const getFolderById = async(userId,folderId, query)=>{
+  const { page, limit, skip } = parsePagination(query);
+  
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+  });
 
-        if (!folder || folder.userId !== userId) {
-            const err = new Error("Folder not found or unauthorized.");
-            err.status = 404;
-            throw err;
-         }
+  if (!folder || folder.userId !== userId) {
+    const err = new Error('Folder not found or unauthorized.');
+    err.status = 404;
+    throw err;
+  }
 
-         return {
-        id: folder.id,
-        name: folder.name,
-        parentId: folder.parentId,
-        folders: folder.subFolders,
-        files: folder.files
-    };
-}
+  const [
+    subFolders,
+    files,
+    totalFolders,
+    totalFiles,
+  ] = await Promise.all([
+    prisma.folder.findMany({
+      where: { parentId: folderId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip,
+    }),
+    prisma.file.findMany({
+      where: { folderId },
+      orderBy: { createdAt: 'desc' },
+      include: { tags: true },
+      take: limit,
+      skip,
+    }),
+    prisma.folder.count({
+      where: { parentId: folderId },
+    }),
+    prisma.file.count({
+      where: { folderId },
+    }),
+  ]);
+
+  return {
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId,
+    folders: {
+      data: subFolders,
+      meta: buildPaginationMeta(totalFolders, page, limit),
+    },
+    files: {
+      data: files,
+      meta: buildPaginationMeta(totalFiles, page, limit),
+    },
+  };
+};
+
 
 
 export const updateFolder = async(userId,folderId,updateData)=>{

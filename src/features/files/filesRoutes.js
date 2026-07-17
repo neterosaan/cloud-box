@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.use(requireAuth);
 
+router.get('/search', filesController.searchFiles);
 router.get('/:id/download', filesController.downloadFile);
 router.patch('/:id', filesController.updateFile);
 router.delete('/:id', filesController.deleteFile);
