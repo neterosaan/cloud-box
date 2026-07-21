@@ -1,5 +1,5 @@
 import prisma from '../../config/prisma.js';
-import { generatePresignedDownloadUrl, deleteS3Object } from '../uploads/s3/s3UploadService.js';
+import { generatePresignedDownloadUrl } from '../uploads/s3/s3UploadService.js';
 import { normalizeError } from '../../lib/normalizeError.js';
 import { parsePagination, buildPaginationMeta } from '../../lib/pagination.js';
 
@@ -8,7 +8,7 @@ export const  downloadFile = async(userId,fileId)=>{
         where : { id : fileId },
     });
 
-    if (!file || file.userId !== userId) {
+    if (!file || file.userId !== userId || file.deletedAt !== null) {
     const err = new Error('File not found or unauthorized.');
     err.status = 404;
     throw err;
@@ -29,7 +29,7 @@ export const updateFile = async (userId, fileId, updateData) => {
     where: { id: fileId },
   });
 
-  if (!file || file.userId !== userId) {
+  if (!file || file.userId !== userId || file.deletedAt !== null) {
     const err = new Error('File not found or unauthorized.');
     err.status = 404;
     throw err;
@@ -39,7 +39,7 @@ export const updateFile = async (userId, fileId, updateData) => {
     const targetFolder = await prisma.folder.findUnique({
         where : { id: updateData.folderId },
     })
-    if (!targetFolder || targetFolder.userId !== userId) {
+    if (!targetFolder || targetFolder.userId !== userId  || targetFolder.deletedAt !== null) {
       const err = new Error('Target folder not found or unauthorized.');
       err.status = 404;
       throw err;
@@ -49,7 +49,7 @@ export const updateFile = async (userId, fileId, updateData) => {
 
   try {
     const updatedFile = await prisma.file.update({
-      where: { id: fileId },
+      where: { id: fileId  , deletedAt : null},
       data: updateData,
     });
 
@@ -67,24 +67,18 @@ export const deleteFile = async (userId, fileId) => {
     where: { id: fileId },
   });
 
-  if (!file || file.userId !== userId) {
+  if (!file || file.userId !== userId || file.deletedAt !== null) {
     const err = new Error('File not found or unauthorized.');
     err.status = 404;
     throw err;
   }
 
-  await deleteS3Object(file.key).catch(() => {
-    const err = new Error('Failed to delete file from storage. Please try again.');
-    err.status = 500;
-    throw err;
-  });
-
-
-  await prisma.file.delete({
+  await prisma.file.update({
     where: { id: fileId },
+    data: { deletedAt: new Date() , trashedIndependently: true},
   });
 
-    return { message: 'File deleted successfully.' };
+  return { message: 'File moved to trash.' };
 };
 
 
@@ -96,7 +90,7 @@ export const attachTag = async (userId, fileId, tagId) => {
     where: { id: fileId },
   });
 
-  if (!file || file.userId !== userId) {
+  if (!file || file.userId !== userId || file.deletedAt !== null) {
     const err = new Error('File not found or unauthorized.');
     err.status = 404;
     throw err;
@@ -116,6 +110,7 @@ export const attachTag = async (userId, fileId, tagId) => {
     where:{
         id: fileId,
         tags: { some : { id: tagId } },
+        deletedAt : null
     },
   });
 
@@ -126,7 +121,7 @@ export const attachTag = async (userId, fileId, tagId) => {
   }
 
   const updatedFile = await prisma.file.update({
-    where: { id: fileId },
+    where: { id: fileId , deletedAt : null },
     data:{
         tags:{
             connect: { id:tagId },
@@ -149,7 +144,7 @@ export const detachTag = async (userId, fileId, tagId) => {
     },
   });
 
-  if (!file || file.userId !== userId) {
+  if (!file || file.userId !== userId || file.deletedAt !== null ) {
     const err = new Error('File not found or unauthorized.');
     err.status = 404;
     throw err;
@@ -162,7 +157,7 @@ export const detachTag = async (userId, fileId, tagId) => {
   }
 
   const updatedFile = await prisma.file.update({
-    where: { id: fileId },
+    where: { id: fileId , deletedAt : null },
     data: {
       tags: {
         disconnect: { id: tagId },
@@ -184,6 +179,7 @@ export const searchFiles = async (userId, filters) => {
   const { page, limit, skip } = parsePagination(filters);
   const where = {
     userId,
+    deletedAt : null,
     ...(filters.name && {
       name: {
         contains: filters.name,

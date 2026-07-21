@@ -20,6 +20,7 @@ export const createFolder = async(userId,name,parentId=null)=>{
                 name,
                 parentId,
                 userId,
+                deletedAt: null
             },
     });
 
@@ -51,23 +52,23 @@ export const getRootFolders = async(userId,query)=>{
     totalFiles,
     ] = await Promise.all([
     prisma.folder.findMany({
-      where: { userId, parentId: null },
+      where: { userId, parentId: null, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip,
     }),
     prisma.file.findMany({
-      where: { userId, folderId: null },
+      where: { userId, folderId: null ,  deletedAt: null},
       orderBy: { createdAt: 'desc' },
       include: { tags: true },
       take: limit,
       skip,
     }),
     prisma.folder.count({
-      where: { userId, parentId: null },
+      where: { userId, parentId: null , deletedAt: null },
     }),
     prisma.file.count({
-      where: { userId, folderId: null },
+      where: { userId, folderId: null , deletedAt: null},
     }),
   ]);
 
@@ -92,7 +93,7 @@ export const getFolderById = async(userId,folderId, query)=>{
     where: { id: folderId },
   });
 
-  if (!folder || folder.userId !== userId) {
+  if (!folder || folder.userId !== userId || folder.deletedAt !== null) {
     const err = new Error('Folder not found or unauthorized.');
     err.status = 404;
     throw err;
@@ -105,23 +106,23 @@ export const getFolderById = async(userId,folderId, query)=>{
     totalFiles,
   ] = await Promise.all([
     prisma.folder.findMany({
-      where: { parentId: folderId },
+      where: { parentId: folderId , deletedAt: null},
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip,
     }),
     prisma.file.findMany({
-      where: { folderId },
+      where: { folderId , deletedAt: null},
       orderBy: { createdAt: 'desc' },
       include: { tags: true },
       take: limit,
       skip,
     }),
     prisma.folder.count({
-      where: { parentId: folderId },
+      where: { parentId: folderId, deletedAt: null },
     }),
     prisma.file.count({
-      where: { folderId },
+      where: { folderId, deletedAt: null },
     }),
   ]);
 
@@ -145,7 +146,7 @@ export const getFolderById = async(userId,folderId, query)=>{
 export const updateFolder = async(userId,folderId,updateData)=>{
 
     const folder = await prisma.folder.findUnique({ where: { id: folderId } });
-    if (!folder || folder.userId !== userId) {
+    if (!folder || folder.userId !== userId || folder.deletedAt !== null) {
         const err = new Error("Folder not found or unauthorized.");
         err.status = 404;
         throw err; 
@@ -159,7 +160,7 @@ export const updateFolder = async(userId,folderId,updateData)=>{
 
     if (updateData.parentId) {
         const newParent = await prisma.folder.findUnique({ where: { id: updateData.parentId } });
-        if (!newParent || newParent.userId !== userId) {
+        if (!newParent || newParent.userId !== userId || newParent.deletedAt !== null) {
         const err = new Error("Target parent folder not found or unauthorized.");
         err.status = 404;
         throw err;  
@@ -199,33 +200,65 @@ export const updateFolder = async(userId,folderId,updateData)=>{
 export const deleteFolder = async (userId, folderId) => {
 
     const folder = await prisma.folder.findUnique({ where: { id: folderId } });
-    if (!folder || folder.userId !== userId) {
+    if (!folder || folder.userId !== userId || folder.deletedAt !== null) {
     const err = new Error("Folder not found or unauthorized.");
     err.status = 404;
     throw err;  
     }
 
-    await prisma.folder.delete({
-        where: { id: folderId }
-    });
+  const now = new Date();
 
-    return { message: "Folder and all its contents deleted successfully." };
+  const descendants = await prisma.$queryRaw`
+    WITH RECURSIVE descendants AS (
+      SELECT id FROM "Folder" WHERE id = ${folderId}
+      UNION ALL
+      SELECT f.id FROM "Folder" f
+      INNER JOIN descendants d ON f."parentId" = d.id
+    )
+    SELECT id FROM descendants
+  `;
+
+  const allFolderIds = descendants.map(d => d.id);
+
+  await prisma.$transaction([
+    
+    prisma.folder.update({
+      where : {id : folderId},
+      data : {
+        deletedAt: now,
+        trashedIndependently: true,
+      },
+    }),
+  prisma.folder.updateMany({
+    where: {
+      id: { in: allFolderIds.filter(id => id !== folderId) },
+      deletedAt: null,
+    },
+    data: { deletedAt: now },
+  }),
+
+  prisma.file.updateMany({
+    where: { folderId: { in: allFolderIds }, deletedAt: null },
+    data: { deletedAt: now },
+  }),
+  ]);
+
+  return { message: 'Folder moved to trash.' };
 };
 
 
 export const getFolderBreadcrumbs = async (userId, folderId) => {
-  // use prisma.$queryRaw with the recursive CTE above
   const breadcrumbs = await prisma.$queryRaw`
     WITH RECURSIVE breadcrumbs AS(
      SELECT id,name,"parentId",1 AS depth
      from "Folder"
-     where "userId" =${userId} AND id=${folderId}
+     where "userId" =${userId} AND id=${folderId} AND "deletedAt" IS NULL
 
      UNION ALL
 
      SELECT f.id,f.name,f."parentId",b.depth + 1
      from "Folder" f
-     INNER JOIN breadcrumbs b ON f.id=b."parentId" AND f."userId" = ${userId}
+     INNER JOIN breadcrumbs b ON f.id=b."parentId" AND f."userId" = ${userId}  AND f."deletedAt" IS NULL
     )
      SELECT id,name,"parentId"
      from breadcrumbs

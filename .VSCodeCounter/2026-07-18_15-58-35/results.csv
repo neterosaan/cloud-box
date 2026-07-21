@@ -1,0 +1,48 @@
+"filename", "language", "JSON", "JavaScript", "MS SQL", "comment", "blank", "total"
+"d:\clodedrive\package-lock.json", "JSON", 3885, 0, 0, 0, 1, 3886
+"d:\clodedrive\package.json", "JSON", 35, 0, 0, 0, 1, 36
+"d:\clodedrive\prisma\migrations\20260121054413_init_schema\migration.sql", "MS SQL", 0, 0, 46, 15, 20, 81
+"d:\clodedrive\prisma\migrations\20260617214642_init\migration.sql", "MS SQL", 0, 0, 6, 13, 6, 25
+"d:\clodedrive\prisma\migrations\20260617230539_change_clerk_to_supabaseauth\migration.sql", "MS SQL", 0, 0, 4, 11, 3, 18
+"d:\clodedrive\prisma\migrations\20260618000656_email_null_condition\migration.sql", "MS SQL", 0, 0, 1, 1, 1, 3
+"d:\clodedrive\prisma\migrations\20260624050644_fix_tag_user_scope\migration.sql", "MS SQL", 0, 0, 4, 11, 4, 19
+"d:\clodedrive\prisma\migrations\20260630092458_add_upload_sessions\migration.sql", "MS SQL", 0, 0, 26, 15, 10, 51
+"d:\clodedrive\prisma\migrations\20260630093549_add_upload_sessions\migration.sql", "MS SQL", 0, 0, 6, 13, 2, 21
+"d:\clodedrive\prisma\migrations\20260718115336_add_soft_delete\migration.sql", "MS SQL", 0, 0, 2, 2, 2, 6
+"d:\clodedrive\src\app.js", "JavaScript", 0, 21, 0, 0, 7, 28
+"d:\clodedrive\src\config\prisma.js", "JavaScript", 0, 6, 0, 0, 4, 10
+"d:\clodedrive\src\config\s3.js", "JavaScript", 0, 9, 0, 0, 2, 11
+"d:\clodedrive\src\features\files\filesController.js", "JavaScript", 0, 149, 0, 0, 28, 177
+"d:\clodedrive\src\features\files\filesRoutes.js", "JavaScript", 0, 12, 0, 0, 4, 16
+"d:\clodedrive\src\features\files\filesService.js", "JavaScript", 0, 174, 0, 0, 43, 217
+"d:\clodedrive\src\features\files\filesValidation.js", "JavaScript", 0, 28, 0, 0, 4, 32
+"d:\clodedrive\src\features\folders\foldersController.js", "JavaScript", 0, 126, 0, 0, 36, 162
+"d:\clodedrive\src\features\folders\foldersRoutes.js", "JavaScript", 0, 12, 0, 0, 12, 24
+"d:\clodedrive\src\features\folders\foldersService.js", "JavaScript", 0, 221, 0, 0, 41, 262
+"d:\clodedrive\src\features\folders\foldersValidation.js", "JavaScript", 0, 24, 0, 0, 7, 31
+"d:\clodedrive\src\features\tags\tagsController.js", "JavaScript", 0, 114, 0, 0, 24, 138
+"d:\clodedrive\src\features\tags\tagsRoutes.js", "JavaScript", 0, 9, 0, 0, 7, 16
+"d:\clodedrive\src\features\tags\tagsService.js", "JavaScript", 0, 45, 0, 0, 18, 63
+"d:\clodedrive\src\features\tags\tagsValidation.js", "JavaScript", 0, 18, 0, 0, 10, 28
+"d:\clodedrive\src\features\trash\trashController.js", "JavaScript", 0, 0, 0, 0, 1, 1
+"d:\clodedrive\src\features\trash\trashRoutes.js", "JavaScript", 0, 0, 0, 0, 1, 1
+"d:\clodedrive\src\features\trash\trashService.js", "JavaScript", 0, 0, 0, 0, 1, 1
+"d:\clodedrive\src\features\trash\trashValidation.js", "JavaScript", 0, 9, 0, 0, 2, 11
+"d:\clodedrive\src\features\uploads\pipeline\extractFilePart.js", "JavaScript", 0, 27, 0, 0, 9, 36
+"d:\clodedrive\src\features\uploads\pipeline\runUploadPipeline.js", "JavaScript", 0, 33, 0, 0, 7, 40
+"d:\clodedrive\src\features\uploads\s3\s3KeyGenerator.js", "JavaScript", 0, 7, 0, 0, 1, 8
+"d:\clodedrive\src\features\uploads\s3\s3UploadService.js", "JavaScript", 0, 36, 0, 0, 11, 47
+"d:\clodedrive\src\features\uploads\streams\mimeTypeSnifferTransform.js", "JavaScript", 0, 52, 0, 1, 8, 61
+"d:\clodedrive\src\features\uploads\streams\mimeTypeValidatorTransform.js", "JavaScript", 0, 24, 0, 0, 5, 29
+"d:\clodedrive\src\features\uploads\streams\sizeGuardTransform.js", "JavaScript", 0, 32, 0, 0, 6, 38
+"d:\clodedrive\src\features\uploads\uploadsConfig.js", "JavaScript", 0, 27, 0, 1, 12, 40
+"d:\clodedrive\src\features\uploads\uploadsController.js", "JavaScript", 0, 49, 0, 2, 10, 61
+"d:\clodedrive\src\features\uploads\uploadsRoutes.js", "JavaScript", 0, 8, 0, 0, 4, 12
+"d:\clodedrive\src\features\uploads\uploadsService.js", "JavaScript", 0, 122, 0, 0, 38, 160
+"d:\clodedrive\src\features\uploads\uploadsValidation.js", "JavaScript", 0, 14, 0, 1, 2, 17
+"d:\clodedrive\src\lib\normalizeError.js", "JavaScript", 0, 21, 0, 0, 5, 26
+"d:\clodedrive\src\lib\pagination.js", "JavaScript", 0, 16, 0, 0, 4, 20
+"d:\clodedrive\src\lib\uploadCleanupJob.js", "JavaScript", 0, 98, 0, 0, 24, 122
+"d:\clodedrive\src\middlewares\authMiddleware.js", "JavaScript", 0, 57, 0, 0, 11, 68
+"d:\clodedrive\src\server.js", "JavaScript", 0, 9, 0, 0, 3, 12
+"Total", "-", 3920, 1609, 95, 86, 462, 6172

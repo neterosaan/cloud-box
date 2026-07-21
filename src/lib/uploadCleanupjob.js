@@ -8,6 +8,8 @@ const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
 const STUCK_UPLOAD_TIMEOUT_MINUTES = 30;
 
+const TRASH_RETENTION_DAYS = 30; 
+
 const abortOrphanedS3MultipartUploads = async (s3KeyPrefix) => {
 
     try{
@@ -107,6 +109,126 @@ const cleanupStuckUploadingSessions = async () => {
 }
 
 
+const purgeExpiredTrashedFiles = async () => {
+  const cutoff = new Date(
+    Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  );
+
+  // Find files that have been in trash longer than retention period
+  const expiredFiles = await prisma.file.findMany({
+    where: {
+      deletedAt: { not: null, lt: cutoff },
+    },
+    select: { id: true, key: true },
+  });
+
+  if (expiredFiles.length === 0) return;
+
+  console.log(
+    `[CleanupJob] Found ${expiredFiles.length} expired trashed file(s). Purging...`
+  );
+
+  for (const file of expiredFiles) {
+    try {
+      // S3 first
+      await deleteS3Object(file.key).catch((err) => {
+        console.error(
+          `[CleanupJob] Failed to delete S3 object ${file.key}:`,
+          err.message
+        );
+      });
+
+      // Then DB
+      await prisma.file.delete({
+        where: { id: file.id },
+      });
+
+      console.log(`[CleanupJob] Purged expired trashed file: ${file.id}`);
+    } catch (err) {
+      console.error(
+        `[CleanupJob] Failed to purge file ${file.id}:`,
+        err.message
+      );
+    }
+  }
+};
+
+
+
+const purgeExpiredTrashedFolders = async () => {
+  const cutoff = new Date(
+    Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  );
+
+  // Only purge top-level trashed folders (trashedIndependently: true)
+  // whose deletedAt has passed the retention period.
+  // Cascaded subfolders/files will be handled by DB cascade on folder delete.
+  const expiredFolders = await prisma.folder.findMany({
+    where: {
+      deletedAt: { not: null, lt: cutoff },
+      trashedIndependently: true,
+    },
+    select: { id: true },
+  });
+
+  if (expiredFolders.length === 0) return;
+
+  console.log(
+    `[CleanupJob] Found ${expiredFolders.length} expired trashed folder(s). Purging...`
+  );
+
+  for (const folder of expiredFolders) {
+    try {
+      // Find all files inside this folder tree for S3 cleanup
+      const descendants = await prisma.$queryRaw`
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM "Folder" WHERE id = ${folder.id}
+          UNION ALL
+          SELECT f.id FROM "Folder" f
+          INNER JOIN descendants d ON f."parentId" = d.id
+        )
+        SELECT id FROM descendants
+      `;
+
+      const allFolderIds = descendants.map(d => d.id);
+
+      const filesToDelete = await prisma.file.findMany({
+        where: {
+          folderId: { in: allFolderIds },
+          deletedAt: { not: null },
+        },
+        select: { id: true, key: true },
+      });
+
+      // Delete all S3 objects — best effort
+      await Promise.allSettled(
+        filesToDelete.map(file =>
+          deleteS3Object(file.key).catch(err =>
+            console.error(
+              `[CleanupJob] Failed to delete S3 object ${file.key}:`,
+              err.message
+            )
+          )
+        )
+      );
+
+      // Delete root folder — DB cascade handles subfolders and files
+      await prisma.folder.delete({
+        where: { id: folder.id },
+      });
+
+      console.log(`[CleanupJob] Purged expired trashed folder: ${folder.id}`);
+    } catch (err) {
+      console.error(
+        `[CleanupJob] Failed to purge folder ${folder.id}:`,
+        err.message
+      );
+    }
+  }
+};
+
+
+
 
 export const runUploadCleanupJob = async () => {
   console.log('[CleanupJob] Starting upload cleanup job...');
@@ -114,6 +236,8 @@ export const runUploadCleanupJob = async () => {
   try {
     await cleanupExpiredPendingSessions();
     await cleanupStuckUploadingSessions();
+    await purgeExpiredTrashedFiles();      // ← new
+    await purgeExpiredTrashedFolders();    // ← new
   } catch (err) {
     console.error('[CleanupJob] Unexpected error during cleanup:', err.message);
   }

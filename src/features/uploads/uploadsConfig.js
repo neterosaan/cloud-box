@@ -3,7 +3,7 @@ export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 //export const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // 5GB per user 
 
-export const STORAGE_QUOTA_BYTES = 100 * 1024;
+export const STORAGE_QUOTA_BYTES =  5 * 1024 * 1024 * 1024;
 
 export const ALLOWED_MIME_TYPES = new Set([
   

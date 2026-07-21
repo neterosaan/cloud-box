@@ -10,7 +10,7 @@ const UPLOAD_SESSION_TTL_MINUTES = 15;
 const getCurrentStorageUsage = async(userId)=>{
   
   const result = await prisma.file.aggregate({
-    where: { userId },
+    where: { userId, deletedAt: null },
     _sum : {size : true},
   });
 
@@ -27,7 +27,7 @@ export const initUploadSession = async (userId, fileName, folderId = null) => {
       where: { id: folderId },
     });
 
-    if (!folder || folder.userId !== userId) {
+    if (!folder || folder.userId !== userId || folder.deletedAt !== null) {
       const err = new Error('Folder not found or unauthorized.');
       err.status = 404;
       throw err;

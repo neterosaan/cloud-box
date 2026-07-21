@@ -4,6 +4,7 @@ import folderRoutes from './features/folders/foldersRoutes.js'
 import fileRoutes from './features/files/filesRoutes.js';
 import uploadRoutes from './features/uploads/uploadsRoutes.js';  
 import tagRoutes from './features/tags/tagsRoutes.js'
+import trashRoutes from './features/trash/trashRoutes.js';
 
 const app = express();
 

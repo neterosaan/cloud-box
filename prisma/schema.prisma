@@ -33,6 +33,9 @@ model Folder {
   uploadSessions UploadSession[]
   createdAt      DateTime        @default(now())
 
+  deletedAt DateTime?
+  trashedIndependently Boolean  @default(false)
+
   @@unique([name, parentId, userId])
 }
 
@@ -55,6 +58,10 @@ model File {
   uploadSession   UploadSession? @relation(fields: [uploadSessionId], references: [id])
 
   createdAt DateTime @default(now())
+
+  deletedAt DateTime?
+
+  trashedIndependently Boolean  @default(false)
 
   @@unique([name, folderId, userId])
 }
