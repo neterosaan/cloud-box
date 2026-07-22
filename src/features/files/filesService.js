@@ -75,7 +75,7 @@ export const deleteFile = async (userId, fileId) => {
 
   await prisma.file.update({
     where: { id: fileId },
-    data: { deletedAt: new Date() , trashedIndependently: true},
+    data: { deletedAt: new Date()  , trashedIndependently: true ,originalFolderId: file.folderId, folderId: null, },
   });
 
   return { message: 'File moved to trash.' };

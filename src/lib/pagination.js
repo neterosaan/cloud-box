@@ -1,14 +1,19 @@
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 
-export const parsePagination = (query)=>{
-    const page = Math.max(1, parseInt(query.page) || 1);
-    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(query.limit) || DEFAULT_LIMIT));
-    const skip = (page-1) * limit;
+export const parsePagination = (query) => {
+  const parsedPage = parseInt(query.page);
+  const parsedLimit = parseInt(query.limit);
 
-    return {page , limit , skip};
-}
+  const rawPage = Number.isNaN(parsedPage) ? 1 : parsedPage;
+  const rawLimit = Number.isNaN(parsedLimit) ? DEFAULT_LIMIT : parsedLimit;
 
+  const page = Math.max(1, rawPage);
+  const limit = Math.min(MAX_LIMIT, Math.max(1, rawLimit));
+  const skip = (page - 1) * limit;
+
+  return { page, limit, skip };
+};
 
 export const buildPaginationMeta = (total, page, limit) => ({
   total,

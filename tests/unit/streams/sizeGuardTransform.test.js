@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SizeGuardTransform } from '../../../src/features/uploads/streams/sizeGuardTransform.js';
 
-// Pipes a list of Buffer chunks through the transform and resolves with
-// either the reassembled output or the error the stream emitted -- whichever
-// happens first. We test the stream through its actual event-based interface
-// (write/end/data/error) rather than calling internal methods directly,
-// since that's the real contract consumers of this stream rely on.
 const runThroughTransform = (transform, chunks) => {
   return new Promise((resolve) => {
     const received = [];
@@ -65,5 +60,62 @@ describe('SizeGuardTransform', () => {
 
     expect(error).not.toBeNull();
     expect(error.status).toBe(413);
+  });
+});
+
+
+
+describe('SizeGuardTransform — storage quota', () => {
+  it('allows the upload when the account has plenty of quota left', async () => {
+    const transform = new SizeGuardTransform({
+      maxBytes: 1000,
+      currentUsage: 0,
+      storageQuota: 10_000,
+    });
+
+    const { error } = await runThroughTransform(transform, [Buffer.from('a'.repeat(500))]);
+
+    expect(error).toBeNull();
+  });
+
+  it('rejects with 507 when currentUsage + incoming bytes would exceed the quota, even though the file itself is under maxBytes', async () => {
+
+    const transform = new SizeGuardTransform({
+      maxBytes: 1000,
+      currentUsage: 9800, 
+      storageQuota: 10_000,
+    });
+
+    const { error } = await runThroughTransform(transform, [Buffer.from('a'.repeat(500))]);
+
+    expect(error).not.toBeNull();
+    expect(error.status).toBe(507);
+    expect(error.message).toMatch(/Storage quota exceeded/);
+  });
+
+  it('allows a stream whose final usage is exactly equal to the quota', async () => {
+    const transform = new SizeGuardTransform({
+      maxBytes: 1000,
+      currentUsage: 9500,
+      storageQuota: 10_000, 
+    });
+
+    const { error } = await runThroughTransform(transform, [Buffer.from('a'.repeat(500))]);
+
+    expect(error).toBeNull();
+  });
+
+  it('reports usage in the error message converted to GB, not raw bytes', async () => {
+    const oneGB = 1024 ** 3;
+    const transform = new SizeGuardTransform({
+      maxBytes: oneGB,
+      currentUsage: 2 * oneGB,
+      storageQuota: 2 * oneGB, 
+    });
+
+    const { error } = await runThroughTransform(transform, [Buffer.from('a')]); 
+
+    expect(error.status).toBe(507);
+    expect(error.message).toContain('2.00GB');
   });
 });

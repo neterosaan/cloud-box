@@ -15,6 +15,8 @@ app.use('/api/folders',folderRoutes)
 app.use('/api/files',fileRoutes)
 app.use('/api/uploads',uploadRoutes); 
 app.use('/api/tags',tagRoutes)
+app.use('/api/trash', trashRoutes);
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

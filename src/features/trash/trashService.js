@@ -77,7 +77,7 @@ export const restoreFile = async (userId, fileId) => {
     throw err;
   }
 
-  let targetFolderId = file.folderId;
+  let targetFolderId = file.originalFolderId;
 
   if (targetFolderId) {
     const parentFolder = await prisma.folder.findUnique({
@@ -94,7 +94,8 @@ export const restoreFile = async (userId, fileId) => {
     data: {
       deletedAt: null,
       folderId: targetFolderId,
-      trashedIndependently: false
+      trashedIndependently: false,
+      originalFolderId: null, 
     },
   });
 
@@ -119,7 +120,7 @@ export const restoreFolder = async (userId, folderId) => {
     throw err;
   }
 
-  let targetParentId = folder.parentId;
+  let targetParentId = folder.originalParentId;
 
   if (targetParentId) {
     const parentFolder = await prisma.folder.findUnique({
@@ -174,6 +175,7 @@ export const restoreFolder = async (userId, folderId) => {
         deletedAt: null,
         parentId: targetParentId,
         trashedIndependently: false,
+        originalParentId: null, 
       },
     }),
 

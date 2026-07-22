@@ -25,7 +25,7 @@ model Folder {
   parentId       String?         // If null, it's a root folder
   parent         Folder?         @relation("SubFolders", fields: [parentId], references: [id], onDelete: Cascade)
   subFolders     Folder[]        @relation("SubFolders")
-
+  originalParentId String?
   userId         String
   user           User            @relation(fields: [userId], references: [id])
 
@@ -48,7 +48,7 @@ model File {
 
   folderId  String?
   folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
-
+  originalFolderId String?
   userId    String
   user      User     @relation(fields: [userId], references: [id])
 

@@ -8,7 +8,7 @@ export const createFolder = async(userId,name,parentId=null)=>{
         const parentFolder= await prisma.folder.findUnique({
             where: {id : parentId}
         })
-        if (!parentFolder || parentFolder.userId !== userId) {
+        if (!parentFolder || parentFolder.userId !== userId || parentFolder.deletedAt !== null) {
         const err = new Error("Parent folder not found or unauthorized.");
         err.status = 404;
         throw err;
@@ -227,6 +227,8 @@ export const deleteFolder = async (userId, folderId) => {
       data : {
         deletedAt: now,
         trashedIndependently: true,
+        originalParentId: folder.parentId,
+        parentId: null,
       },
     }),
   prisma.folder.updateMany({
