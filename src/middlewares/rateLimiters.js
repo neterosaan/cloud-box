@@ -14,6 +14,6 @@ export const uploadLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id ?? req.ip, 
+  keyGenerator: (req) => req.user?.id ??  ipKeyGenerator(req.ip), 
   message: { success: false, message: 'Upload limit reached. Please try again later.' },
 });
