@@ -271,7 +271,10 @@ export const permanentDeleteFolder = async (userId, folderId) => {
   await Promise.allSettled(
     filesToDelete.map(file =>
       deleteS3Object(file.key).catch(err =>
-        console.error(`[PermanentDelete] Failed to delete S3 object ${file.key}:`, err.message)
+        logger.error(
+          { err, key: file.key },
+          '[PermanentDelete] Failed to delete S3 object'
+        )
       )
     )
   );

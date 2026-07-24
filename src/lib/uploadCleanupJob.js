@@ -27,16 +27,22 @@ const abortOrphanedS3MultipartUploads = async (s3KeyPrefix) => {
                 UploadId: upload.UploadId
             });
       await s3.send(abortCommand).catch((err) => {
-        console.error(
-          `[CleanupJob] Failed to abort multipart upload for key ${upload.Key}:`,
-          err.message
+        logger.error(
+          {
+            key: upload.Key,
+            err,
+          },
+          '[CleanupJob] Failed to abort multipart upload'
         );
       });
     }
     }catch(err){
-      console.error(
-      `[CleanupJob] Failed to list multipart uploads for prefix ${s3KeyPrefix}:`,
-      err.message
+    logger.error(
+      {
+        prefix: s3KeyPrefix,
+        err,
+      },
+      '[CleanupJob] Failed to list multipart uploads'
     );
     }
 }
@@ -57,7 +63,10 @@ const cleanupExpiredPendingSessions = async () => {
     })
     
     if (count > 0) {
-    console.log(`[CleanupJob] Marked ${count} expired PENDING session(s) as ABORTED.`);
+    logger.info(
+      { count },
+      '[CleanupJob] Marked expired PENDING sessions as ABORTED'
+    );
   }
 }
 
@@ -76,8 +85,9 @@ const cleanupStuckUploadingSessions = async () => {
 
   if (stuckSessions.length === 0) return;
 
-  console.log(
-    `[CleanupJob] Found ${stuckSessions.length} stuck UPLOADING session(s). Cleaning up...`
+  logger.info(
+    { stuckSessionCount: stuckSessions.length },
+    '[CleanupJob] Found stuck UPLOADING sessions. Cleaning up...'
   );
 
   for (const session of stuckSessions){
@@ -85,9 +95,9 @@ const cleanupStuckUploadingSessions = async () => {
         await abortOrphanedS3MultipartUploads(session.s3Key);
 
         await deleteS3Object(session.s3Key).catch((err) => {
-        console.error(
-          `[CleanupJob] Failed to delete S3 object for key ${session.s3Key}:`,
-          err.message
+        logger.error(
+          { key: session.s3Key, err },
+          '[CleanupJob] Failed to delete S3 object'
         );
      })
         await prisma.uploadSession.update({
@@ -98,12 +108,15 @@ const cleanupStuckUploadingSessions = async () => {
         },
       });
 
-      console.log(`[CleanupJob] Cleaned up stuck session: ${session.id}`);
+    logger.info(
+      { sessionId: session.id },
+      '[CleanupJob] Cleaned up stuck session'
+    );
     }catch(err){
-    console.error(
-        `[CleanupJob] Failed to clean up session ${session.id}:`,
-        err.message
-      );
+    logger.error(
+      { sessionId: session.id, err },
+      '[CleanupJob] Failed to clean up session'
+    );
     }
   }
 }
@@ -124,18 +137,22 @@ const purgeExpiredTrashedFiles = async () => {
 
   if (expiredFiles.length === 0) return;
 
-  console.log(
-    `[CleanupJob] Found ${expiredFiles.length} expired trashed file(s). Purging...`
+  logger.info(
+    { expiredFileCount: expiredFiles.length },
+    '[CleanupJob] Found expired trashed files. Purging...'
   );
 
   for (const file of expiredFiles) {
     try {
       // S3 first
       await deleteS3Object(file.key).catch((err) => {
-        console.error(
-          `[CleanupJob] Failed to delete S3 object ${file.key}:`,
-          err.message
-        );
+      logger.error(
+        {
+          key: file.key,
+          err,
+        },
+        '[CleanupJob] Failed to delete S3 object'
+      );
       });
 
       // Then DB
@@ -143,11 +160,19 @@ const purgeExpiredTrashedFiles = async () => {
         where: { id: file.id },
       });
 
-      console.log(`[CleanupJob] Purged expired trashed file: ${file.id}`);
+    logger.info(
+      {
+        fileId: file.id,
+      },
+      '[CleanupJob] Purged expired trashed file'
+    );
     } catch (err) {
-      console.error(
-        `[CleanupJob] Failed to purge file ${file.id}:`,
-        err.message
+      logger.error(
+        {
+          fileId: file.id,
+          err,
+        },
+        '[CleanupJob] Failed to purge file'
       );
     }
   }
@@ -160,9 +185,6 @@ const purgeExpiredTrashedFolders = async () => {
     Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000
   );
 
-  // Only purge top-level trashed folders (trashedIndependently: true)
-  // whose deletedAt has passed the retention period.
-  // Cascaded subfolders/files will be handled by DB cascade on folder delete.
   const expiredFolders = await prisma.folder.findMany({
     where: {
       deletedAt: { not: null, lt: cutoff },
@@ -173,8 +195,11 @@ const purgeExpiredTrashedFolders = async () => {
 
   if (expiredFolders.length === 0) return;
 
-  console.log(
-    `[CleanupJob] Found ${expiredFolders.length} expired trashed folder(s). Purging...`
+  logger.info(
+    {
+      expiredFolderCount: expiredFolders.length,
+    },
+    '[CleanupJob] Found expired trashed folders. Purging...'
   );
 
   for (const folder of expiredFolders) {
@@ -204,9 +229,12 @@ const purgeExpiredTrashedFolders = async () => {
       await Promise.allSettled(
         filesToDelete.map(file =>
           deleteS3Object(file.key).catch(err =>
-            console.error(
-              `[CleanupJob] Failed to delete S3 object ${file.key}:`,
-              err.message
+            logger.error(
+              {
+                key: file.key,
+                err,
+              },
+              '[CleanupJob] Failed to delete S3 object'
             )
           )
         )
@@ -217,11 +245,19 @@ const purgeExpiredTrashedFolders = async () => {
         where: { id: folder.id },
       });
 
-      console.log(`[CleanupJob] Purged expired trashed folder: ${folder.id}`);
+      logger.info(
+        {
+          folderId: folder.id,
+        },
+        '[CleanupJob] Purged expired trashed folder'
+      );
     } catch (err) {
-      console.error(
-        `[CleanupJob] Failed to purge folder ${folder.id}:`,
-        err.message
+      logger.error(
+        {
+          folderId: folder.id,
+          err,
+        },
+        '[CleanupJob] Failed to purge folder'
       );
     }
   }
@@ -231,16 +267,20 @@ const purgeExpiredTrashedFolders = async () => {
 
 
 export const runUploadCleanupJob = async () => {
-  console.log('[CleanupJob] Starting upload cleanup job...');
+  logger.info('[CleanupJob] Starting upload cleanup job...');
 
   try {
     await cleanupExpiredPendingSessions();
     await cleanupStuckUploadingSessions();
-    await purgeExpiredTrashedFiles();      // ← new
-    await purgeExpiredTrashedFolders();    // ← new
+    await purgeExpiredTrashedFiles();     
+    await purgeExpiredTrashedFolders();    
   } catch (err) {
-    console.error('[CleanupJob] Unexpected error during cleanup:', err.message);
-  }
+  logger.error(
+    { err },
+    '[CleanupJob] Unexpected error during cleanup'
+  );  
+}
 
-  console.log('[CleanupJob] Upload cleanup job complete.');
+logger.info('[CleanupJob] Upload cleanup job complete.');
+
 };

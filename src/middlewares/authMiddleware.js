@@ -13,7 +13,10 @@ function getKey(header, callback) {
 
   client.getSigningKey(header.kid, (err, key) => {
     if (err) {
-      console.error("JWKS ERROR:", err.message);
+      logger.error(
+        { err: err.message },
+        'JWKS ERROR'
+      );
       return callback(err);
     }
 
@@ -58,7 +61,10 @@ export const requireAuth = (req, res, next) => {
       req.user = user;
       next();
     } catch (dbError) {
-      console.error("DB error:", dbError);
+      logger.error(
+        { err: dbError },
+        'DB error'
+      );
       return res.status(500).json({
         success: false,
         message: "Database error",

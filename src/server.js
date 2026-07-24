@@ -7,7 +7,7 @@ import { runUploadCleanupJob } from './lib/uploadCleanupJob.js';
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server is flying on http://localhost:${PORT}`);
+logger.info(`🚀 Server is flying on http://localhost:${PORT}`);
 });
 
 runUploadCleanupJob();
