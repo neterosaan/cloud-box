@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import logger from './config/logger.js';
 import { validateEnv } from './config/validateEnv.js';
 validateEnv();
 import app from './app.js';

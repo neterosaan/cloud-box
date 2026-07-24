@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import prisma from "../config/prisma.js";
+import logger from '../config/logger.js'
 
 const client = jwksClient({
   jwksUri: `${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`,

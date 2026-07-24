@@ -1,3 +1,4 @@
+import logger from './logger.js';
 const REQUIRED_ENV_VARS = [
   'DATABASE_URL',
   'DIRECT_URL',

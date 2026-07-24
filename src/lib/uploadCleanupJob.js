@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import logger from '../config/logger.js';
 import { deleteS3Object } from '../features/uploads/s3/s3UploadService.js';
 import { AbortMultipartUploadCommand, ListMultipartUploadsCommand } from '@aws-sdk/client-s3';
 import s3 from '../config/s3.js';

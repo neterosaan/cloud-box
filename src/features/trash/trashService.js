@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import logger from '../../config/logger.js';
 import { deleteS3Object } from '../uploads/s3/s3UploadService.js';
 import { parsePagination, buildPaginationMeta } from '../../lib/pagination.js';
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { globalLimiter } from './middlewares/rateLimiters.js';
+import logger from './config/logger.js';
 import folderRoutes from './features/folders/foldersRoutes.js'
 import fileRoutes from './features/files/filesRoutes.js';
 import uploadRoutes from './features/uploads/uploadsRoutes.js';  
