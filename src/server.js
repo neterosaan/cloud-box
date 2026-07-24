@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { validateEnv } from './config/validateEnv.js';
+validateEnv();
 import app from './app.js';
 import { runUploadCleanupJob } from './lib/uploadCleanupJob.js';
 

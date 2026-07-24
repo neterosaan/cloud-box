@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { globalLimiter } from './middlewares/rateLimiters.js';
 import folderRoutes from './features/folders/foldersRoutes.js'
 import fileRoutes from './features/files/filesRoutes.js';
